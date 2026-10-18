@@ -59,8 +59,8 @@ up: cluster preload storage mlflow ## Socle complet du Lab 0
 .PHONY: pf pf-stop
 pf: ## Port-forwards : S3 :8333, filer :8888, MLflow :5000 (en arrière-plan)
 	mkdir -p $(PF_LOG)
-	pkill -f "port-forward svc/s3 8333" || true
-	pkill -f "port-forward svc/mlflow 5000" || true
+	pkill -f "^kubectl .*port-forward svc/s3 8333" || true
+	pkill -f "^kubectl .*port-forward svc/mlflow 5000" || true
 	nohup kubectl --context $(KCTX) -n storage port-forward svc/s3 8333:8333 8888:8888 >$(PF_LOG)/s3.log 2>&1 &
 	nohup kubectl --context $(KCTX) -n mlflow  port-forward svc/mlflow 5000:5000      >$(PF_LOG)/mlflow.log 2>&1 &
 	sleep 3
@@ -69,9 +69,9 @@ pf: ## Port-forwards : S3 :8333, filer :8888, MLflow :5000 (en arrière-plan)
 	echo "MLflow -> http://localhost:5000"
 
 pf-stop: ## Arrête tous les port-forwards du cours (S3, MLflow, UI KFP)
-	pkill -f "port-forward svc/s3 8333" || true
-	pkill -f "port-forward svc/mlflow 5000" || true
-	pkill -f "port-forward svc/ml-pipeline-ui 8080" || true
+	pkill -f "^kubectl .*port-forward svc/s3 8333" || true
+	pkill -f "^kubectl .*port-forward svc/mlflow 5000" || true
+	pkill -f "^kubectl .*port-forward svc/ml-pipeline-ui 8080" || true
 
 # --- Briques ajoutées module par module ----------------------------------------
 .PHONY: kfp airflow kserve argocd monitoring external-secrets
