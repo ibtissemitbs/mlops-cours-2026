@@ -1,0 +1,5 @@
+[core]
+    remote = storage
+['remote "storage"']
+    url = s3://dvc-store/ai4i
+    endpointurl = http://localhost:8333

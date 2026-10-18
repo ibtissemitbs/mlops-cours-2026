@@ -1,0 +1,33 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python -m src.download
+    deps:
+    - path: src/dataset_config.py
+      hash: md5
+      md5: 3dfbc7152adfcc892ce94654d08a25e0
+      size: 8225
+    - path: src/download.py
+      hash: md5
+      md5: 07e3bf1194dde9ce2977dce0f281c6c6
+      size: 1946
+    params:
+      dataset.yaml:
+        features:
+          numeric:
+          - Air temperature [K]
+          - Process temperature [K]
+          - Rotational speed [rpm]
+          - Torque [Nm]
+          - Tool wear [min]
+          categorical:
+          - Type
+        raw_path: data/raw/dataset.csv
+        target:
+          column: Machine failure
+          positive_class: 1
+    outs:
+    - path: data/raw/dataset.csv
+      hash: md5
+      md5: 86036a3e305fd6bd313d21a8766498c7
+      size: 294985
