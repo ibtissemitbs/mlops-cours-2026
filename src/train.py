@@ -32,6 +32,7 @@ from src.dataset_config import DatasetConfig, load_config
 EXPERIMENT = "scoring"
 TRAIN_CSV = Path("data/processed/train.csv")
 VALIDATION_CSV = Path("data/processed/validation.csv")
+TEST_CSV = Path("data/processed/test.csv")
 MODEL_DIR = Path("models/model")
 
 MODELS = {
