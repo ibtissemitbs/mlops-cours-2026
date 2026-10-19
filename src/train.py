@@ -24,13 +24,14 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 
 from src.dataset_config import DatasetConfig, load_config
 
 EXPERIMENT = "scoring"
 TRAIN_CSV = Path("data/processed/train.csv")
-TEST_CSV = Path("data/processed/test.csv")
+VALIDATION_CSV = Path("data/processed/validation.csv")
 MODEL_DIR = Path("models/model")
 
 MODELS = {
@@ -43,10 +44,18 @@ MODELS = {
         GradientBoostingClassifier,
         ["n_estimators", "max_depth", "learning_rate"],
     ),
+    "mlp": (
+        MLPClassifier,
+        ["hidden_layer_sizes", "alpha", "learning_rate_init", "max_iter"],
+    ),
     "dummy": (DummyClassifier, []),
 }
 
-SKOPS_TRUSTED_TYPES = ["numpy.dtype", "sklearn.tree._tree.Tree"]
+SKOPS_TRUSTED_TYPES = [
+    "numpy.dtype",
+    "sklearn.tree._tree.Tree",
+    "sklearn.neural_network._stochastic_optimizers.AdamOptimizer",
+]
 PIP_REQUIREMENTS = [
     f"{p}=={version(p)}"
     for p in ("scikit-learn", "skops", "pandas", "numpy")
@@ -80,6 +89,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--random_state", type=int, default=defaults["random_state"]
     )
+    parser.add_argument(
+        "--hidden_layer_sizes",
+        type=lambda value: tuple(int(n) for n in value.split(",")),
+        default=tuple(defaults["hidden_layer_sizes"]),
+    )
+    parser.add_argument("--alpha", type=float, default=defaults["alpha"])
+    parser.add_argument(
+        "--learning_rate_init", type=float,
+        default=defaults["learning_rate_init"],
+    )
+    parser.add_argument("--max_iter", type=int, default=defaults["max_iter"])
     return parser.parse_args()
 
 
@@ -129,7 +149,7 @@ def main() -> None:
     cfg = load_config()
 
     X_train, y_train = cfg.read_xy(TRAIN_CSV)
-    X_test, y_test = cfg.read_xy(TEST_CSV)
+    X_validation, y_validation = cfg.read_xy(VALIDATION_CSV)
 
     hyperparams = {
         name: getattr(args, name) for name in MODELS[args.model][1]
@@ -155,6 +175,8 @@ def main() -> None:
         mlflow.set_tags({
             "model_type": args.model,
             "dataset": cfg.name,
+            "evaluation_split": "validation",
+            "protocol": "train6400-val1600-test2000",
             "data_md5": file_md5(cfg.raw_path),
             "launched_by": launched_by,
         })
@@ -171,16 +193,16 @@ def main() -> None:
         model.fit(X_train, y_train)
 
         metrics = compute_metrics(
-            cfg, y_test, model.predict_proba(X_test)[:, 1], threshold
+            cfg, y_validation, model.predict_proba(X_validation)[:, 1], threshold
         )
         mlflow.log_metrics(metrics)
 
-        signature = infer_signature(X_test, model.predict(X_test))
+        signature = infer_signature(X_validation, model.predict(X_validation))
         mlflow.sklearn.log_model(
             sk_model=model,
             name="model",
             signature=signature,
-            input_example=X_test.head(3),
+            input_example=X_validation.head(3),
             pip_requirements=PIP_REQUIREMENTS,
             skops_trusted_types=SKOPS_TRUSTED_TYPES,
             metadata={"decision_threshold": threshold},

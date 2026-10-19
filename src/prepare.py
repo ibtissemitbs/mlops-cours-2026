@@ -36,9 +36,22 @@ def main() -> None:
         stratify=y,
     )
 
+    # Validation issue uniquement des données d'entraînement.
+    train, validation = train_test_split(
+        train,
+        test_size=params["validation_size"],
+        random_state=cfg.random_state,
+        stratify=cfg.encode_target(train[cfg.target]),
+    )
+
     PROCESSED.mkdir(parents=True, exist_ok=True)
     train.to_csv(PROCESSED / "train.csv", index=False)
     test.to_csv(PROCESSED / "test.csv", index=False)
+    validation.to_csv(PROCESSED / "validation.csv", index=False)
+    print(
+        f"Validation : {len(validation)} observations · "
+        f"pannes : {cfg.encode_target(validation[cfg.target]).mean():.2%}"
+    )
 
     # Source Feast : variables explicatives, sans la cible.
     features = df[[id_col, *cfg.features]].copy()
