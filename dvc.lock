@@ -1,0 +1,203 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python -m src.download
+    deps:
+    - path: src/dataset_config.py
+      hash: md5
+      md5: 3dfbc7152adfcc892ce94654d08a25e0
+      size: 8225
+    - path: src/download.py
+      hash: md5
+      md5: 07e3bf1194dde9ce2977dce0f281c6c6
+      size: 1946
+    params:
+      dataset.yaml:
+        features:
+          numeric:
+          - Air temperature [K]
+          - Process temperature [K]
+          - Rotational speed [rpm]
+          - Torque [Nm]
+          - Tool wear [min]
+          categorical:
+          - Type
+        raw_path: data/raw/dataset.csv
+        target:
+          column: Machine failure
+          positive_class: 1
+    outs:
+    - path: data/raw/dataset.csv
+      hash: md5
+      md5: 86036a3e305fd6bd313d21a8766498c7
+      size: 294985
+  prepare:
+    cmd: python -m src.prepare
+    deps:
+    - path: data/raw/dataset.csv
+      hash: md5
+      md5: 86036a3e305fd6bd313d21a8766498c7
+      size: 294985
+    - path: src/dataset_config.py
+      hash: md5
+      md5: 3dfbc7152adfcc892ce94654d08a25e0
+      size: 8225
+    - path: src/prepare.py
+      hash: md5
+      md5: f46f3abb52fe2d7911e1381dac78e7d7
+      size: 2251
+    params:
+      params.yaml:
+        prepare:
+          id_column: request_id
+          event_timestamp: '2026-01-01T00:00:00+00:00'
+          validation_size: 0.2
+      dataset.yaml:
+        features:
+          numeric:
+          - Air temperature [K]
+          - Process temperature [K]
+          - Rotational speed [rpm]
+          - Torque [Nm]
+          - Tool wear [min]
+          categorical:
+          - Type
+        sensitive: []
+        split:
+          test_size: 0.2
+          random_state: 42
+        target:
+          column: Machine failure
+          positive_class: 1
+    outs:
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: fc2933e56af9fff3fa46e61ab4c95089
+      size: 121077
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 063dbb3c3e635867904c7b8595761545
+      size: 68901
+    - path: data/processed/train.csv
+      hash: md5
+      md5: b8c867d049d37e1996955218e939cfd6
+      size: 220093
+    - path: data/processed/validation.csv
+      hash: md5
+      md5: 3749316a8a953bac95ff5254bfd0066f
+      size: 55150
+  train:
+    cmd: python -m src.train
+    deps:
+    - path: data/processed/train.csv
+      hash: md5
+      md5: b8c867d049d37e1996955218e939cfd6
+      size: 220093
+    - path: data/processed/validation.csv
+      hash: md5
+      md5: 3749316a8a953bac95ff5254bfd0066f
+      size: 55150
+    - path: data/raw/dataset.csv
+      hash: md5
+      md5: 86036a3e305fd6bd313d21a8766498c7
+      size: 294985
+    - path: src/dataset_config.py
+      hash: md5
+      md5: 3dfbc7152adfcc892ce94654d08a25e0
+      size: 8225
+    - path: src/train.py
+      hash: md5
+      md5: 64702aaf3dc31824b53d89420e98f1c3
+      size: 7400
+    params:
+      params.yaml:
+        train:
+          model: gradient_boosting
+          C: 0.1
+          class_weight: balanced
+          n_estimators: 100
+          max_depth: 3
+          learning_rate: 0.1
+          random_state: 42
+          hidden_layer_sizes:
+          - 32
+          alpha: 0.0001
+          learning_rate_init: 0.001
+          max_iter: 500
+      dataset.yaml:
+        features:
+          numeric:
+          - Air temperature [K]
+          - Process temperature [K]
+          - Rotational speed [rpm]
+          - Torque [Nm]
+          - Tool wear [min]
+          categorical:
+          - Type
+        metrics:
+          primary: roc_auc
+          promotion_threshold: 0.7
+          cost_matrix:
+            false_negative: 5
+            false_positive: 1
+        name: ai4i-predictive-maintenance
+        sensitive: []
+        target:
+          column: Machine failure
+          positive_class: 1
+    outs:
+    - path: models/model
+      hash: md5
+      md5: c388ed364a977e63a4b45ec1757b2e71.dir
+      size: 3444691
+      nfiles: 5
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 063dbb3c3e635867904c7b8595761545
+      size: 68901
+    - path: models/model
+      hash: md5
+      md5: c388ed364a977e63a4b45ec1757b2e71.dir
+      size: 3444691
+      nfiles: 5
+    - path: src/dataset_config.py
+      hash: md5
+      md5: 3dfbc7152adfcc892ce94654d08a25e0
+      size: 8225
+    - path: src/evaluate.py
+      hash: md5
+      md5: 9bafe5c5d92096e20bce92ce2766b161
+      size: 1408
+    - path: src/train.py
+      hash: md5
+      md5: 64702aaf3dc31824b53d89420e98f1c3
+      size: 7400
+    params:
+      dataset.yaml:
+        features:
+          numeric:
+          - Air temperature [K]
+          - Process temperature [K]
+          - Rotational speed [rpm]
+          - Torque [Nm]
+          - Tool wear [min]
+          categorical:
+          - Type
+        metrics:
+          primary: roc_auc
+          promotion_threshold: 0.7
+          cost_matrix:
+            false_negative: 5
+            false_positive: 1
+        sensitive: []
+        target:
+          column: Machine failure
+          positive_class: 1
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: 0f8e1f750d42bf361a07bd74f37d6a5c
+      size: 303
