@@ -1,0 +1,69 @@
+stages:
+  download:
+    cmd: python -m src.download
+    deps:
+      - src/dataset_config.py
+      - src/download.py
+    params:
+      - dataset.yaml:
+          - features
+          - raw_path
+          - target
+    outs:
+      - data/raw/dataset.csv
+
+  prepare:
+    cmd: python -m src.prepare
+    deps:
+      - src/dataset_config.py
+      - src/prepare.py
+      - data/raw/dataset.csv
+    params:
+      - dataset.yaml:
+          - features
+          - sensitive
+          - split
+          - target
+      - prepare
+    outs:
+      - data/processed/train.csv
+      - data/processed/validation.csv
+      - data/processed/test.csv
+      - data/processed/features.parquet
+
+  train:
+    cmd: python -m src.train
+    deps:
+      - src/dataset_config.py
+      - src/train.py
+      - data/raw/dataset.csv
+      - data/processed/train.csv
+      - data/processed/validation.csv
+    params:
+      - dataset.yaml:
+          - name
+          - features
+          - sensitive
+          - target
+          - metrics
+      - train
+    outs:
+      - models/model
+
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+      - src/evaluate.py
+      - src/train.py
+      - src/dataset_config.py
+      - models/model
+      - data/processed/test.csv
+    params:
+      - dataset.yaml:
+          - features
+          - sensitive
+          - target
+          - metrics
+    metrics:
+      - reports/metrics.json:
+          cache: false
