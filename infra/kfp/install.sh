@@ -17,7 +17,7 @@ source ../versions.env
 
 KCTX="kind-${KIND_CLUSTER_NAME}"
 K=(kubectl --context "${KCTX}")
-BASE="github.com/kubeflow/pipelines/manifests/kustomize"
+BASE="/tmp/kfp-2.17.2/manifests/kustomize"
 
 if ! "${K[@]}" get nodes >/dev/null 2>&1; then
   echo "Cluster ${KCTX} injoignable : lancez d'abord 'make cluster' (Lab 0)." >&2
@@ -25,14 +25,14 @@ if ! "${K[@]}" get nodes >/dev/null 2>&1; then
 fi
 
 echo "==> 1/3 KFP ${KFP_VERSION} : ressources cluster (CRD + namespace kubeflow)"
-"${K[@]}" apply -k "${BASE}/cluster-scoped-resources?ref=${KFP_VERSION}"
+"${K[@]}" apply -k "${BASE}/cluster-scoped-resources"
 "${K[@]}" wait --for condition=established --timeout=120s \
   crd/applications.app.k8s.io \
   crd/scheduledworkflows.kubeflow.org \
   crd/workflows.argoproj.io
 
 echo "==> 2/3 KFP ${KFP_VERSION} : composants (env/platform-agnostic)"
-"${K[@]}" apply -k "${BASE}/env/platform-agnostic?ref=${KFP_VERSION}"
+"${K[@]}" apply -k "${BASE}/env/platform-agnostic"
 
 echo "==> 3/3 Attente des déploiements (premier pull des images : 5 à 10 min)"
 # mysql et seaweedfs d'abord : ml-pipeline et metadata-grpc redémarrent tant que

@@ -42,7 +42,7 @@ trap cleanup EXIT
 t() {
   local secs=$1
   shift
-  if command -v timeout >/dev/null 2>&1; then timeout "$secs" "$@"; else "$@"; fi
+  if command -v timeout >/dev/null 2>&1; then timeout --kill-after=5s "$secs" "$@"; else "$@"; fi
 }
 
 # Lance la venv du repo sans la resynchroniser.
@@ -53,6 +53,7 @@ check() {
   local label=$1 hint=$2
   shift 2
   TOTAL=$((TOTAL + 1))
+  echo "⏳ Vérification : ${label}"
   if "$@" >/dev/null 2>&1; then
     echo "✅ ${label}"
   else
@@ -266,12 +267,12 @@ airflow_up() { t 20 "${AF[@]}" ps --services --status running 2>/dev/null | grep
 airflow_live_ok() {
   local errors dags runs
   errors=$(t 90 "${AF[@]}" exec -T airflow-scheduler airflow dags list-import-errors -o json \
-    2>/dev/null | tail -n 1)
+    2>/dev/null </dev/null | tail -n 1)
   ! grep -q "scoring_dag" <<<"$errors" || return 1
-  dags=$(t 90 "${AF[@]}" exec -T airflow-scheduler airflow dags list -o json 2>/dev/null |
+  dags=$(t 90 "${AF[@]}" exec -T airflow-scheduler airflow dags list -o json 2>/dev/null </dev/null |
     tail -n 1)
   runs=$(t 90 "${AF[@]}" exec -T airflow-scheduler airflow dags list-runs scoring_dag \
-    --state success -o json 2>/dev/null | tail -n 1)
+    --state success -o json 2>/dev/null </dev/null | tail -n 1)
   py - "$dags" "$runs" <<'EOF'
 import json
 import sys

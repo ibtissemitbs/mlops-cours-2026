@@ -26,14 +26,16 @@ def main():
     cfg = load_config()
     metric = cfg.primary_metric
     if metric not in {
-        "roc_auc", "average_precision", "f1",
-        "precision", "recall", "accuracy",
+        "roc_auc",
+        "average_precision",
+        "f1",
+        "precision",
+        "recall",
+        "accuracy",
     }:
         raise SystemExit("Métrique principale non prise en charge.")
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     client = mlflow.MlflowClient()
     exp = client.get_experiment_by_name(EXPERIMENT)
     if exp is None:
@@ -61,10 +63,7 @@ def main():
     else:
         candidates = client.search_runs(
             [exp.experiment_id],
-            filter_string=(
-                filters + f" AND {args.filter}"
-                if args.filter else filters
-            ),
+            filter_string=(filters + f" AND {args.filter}" if args.filter else filters),
             order_by=[f"metrics.{metric} DESC", "attributes.start_time DESC"],
             max_results=1,
         )
@@ -104,9 +103,7 @@ def main():
             raise SystemExit("Impossible d'identifier un modèle unique.")
 
         model_id = outputs[0].model_id
-        registered = mlflow.register_model(
-            f"models:/{model_id}", MODEL_NAME
-        )
+        registered = mlflow.register_model(f"models:/{model_id}", MODEL_NAME)
         version = registered.version
 
     version_tags = {
@@ -114,9 +111,7 @@ def main():
         "model_type": tags.get("model_type", "unknown"),
         "selection_split": "validation",
         f"validation_{metric}": str(score),
-        "validation_status": (
-            "passed" if score >= cfg.promotion_threshold else "failed"
-        ),
+        "validation_status": ("passed" if score >= cfg.promotion_threshold else "failed"),
     }
     for key, value in version_tags.items():
         client.set_model_version_tag(MODEL_NAME, version, key, value)

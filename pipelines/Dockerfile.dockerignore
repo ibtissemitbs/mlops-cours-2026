@@ -1,0 +1,10 @@
+*
+!dataset.yaml
+!params.yaml
+!src/
+!pipelines/
+pipelines/*
+!pipelines/requirements.txt
+!pipelines/__init__.py
+!pipelines/stage.py
+**/__pycache__

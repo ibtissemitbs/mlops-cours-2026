@@ -8,7 +8,6 @@ from itertools import product
 CONFIGS = [
     # 1 référence naïve
     ("dummy", []),
-
     # 4 valeurs de C x 2 pondérations = 8 essais
     *[
         ("logistic_regression", ["--C", str(c), "--class_weight", w])
@@ -17,13 +16,11 @@ CONFIGS = [
             ["none", "balanced"],
         )
     ],
-
     # 3 nombres d'arbres x 3 profondeurs = 9 essais
     *[
         ("random_forest", ["--n_estimators", str(n), "--max_depth", str(d)])
         for n, d in product([100, 200, 400], [4, 8, "none"])
     ],
-
     # 2 nombres d'arbres x 2 profondeurs = 4 essais
     *[
         ("gradient_boosting", ["--n_estimators", str(n), "--max_depth", str(d)])

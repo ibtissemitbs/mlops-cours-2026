@@ -19,12 +19,10 @@ from feast.types import Float64, String
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402 — nécessite le chemin ROOT
 
 cfg = load_config(ROOT / "dataset.yaml")
-params = yaml.safe_load(
-    (ROOT / "params.yaml").read_text(encoding="utf-8")
-)
+params = yaml.safe_load((ROOT / "params.yaml").read_text(encoding="utf-8"))
 id_column = params["prepare"]["id_column"]
 
 project = Project(
