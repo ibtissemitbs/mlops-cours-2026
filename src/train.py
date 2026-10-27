@@ -57,10 +57,7 @@ SKOPS_TRUSTED_TYPES = [
     "sklearn.tree._tree.Tree",
     "sklearn.neural_network._stochastic_optimizers.AdamOptimizer",
 ]
-PIP_REQUIREMENTS = [
-    f"{p}=={version(p)}"
-    for p in ("scikit-learn", "skops", "pandas", "numpy")
-]
+PIP_REQUIREMENTS = [f"{p}=={version(p)}" for p in ("scikit-learn", "skops", "pandas", "numpy")]
 
 
 def none_or(cast):
@@ -68,28 +65,16 @@ def none_or(cast):
 
 
 def parse_args() -> argparse.Namespace:
-    defaults = yaml.safe_load(
-        Path("params.yaml").read_text(encoding="utf-8")
-    )["train"]
+    defaults = yaml.safe_load(Path("params.yaml").read_text(encoding="utf-8"))["train"]
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=list(MODELS), default=defaults["model"])
     parser.add_argument("--C", type=float, default=defaults["C"])
-    parser.add_argument(
-        "--class_weight", type=none_or(str), default=defaults["class_weight"]
-    )
-    parser.add_argument(
-        "--n_estimators", type=int, default=defaults["n_estimators"]
-    )
-    parser.add_argument(
-        "--max_depth", type=none_or(int), default=defaults["max_depth"]
-    )
-    parser.add_argument(
-        "--learning_rate", type=float, default=defaults["learning_rate"]
-    )
-    parser.add_argument(
-        "--random_state", type=int, default=defaults["random_state"]
-    )
+    parser.add_argument("--class_weight", type=none_or(str), default=defaults["class_weight"])
+    parser.add_argument("--n_estimators", type=int, default=defaults["n_estimators"])
+    parser.add_argument("--max_depth", type=none_or(int), default=defaults["max_depth"])
+    parser.add_argument("--learning_rate", type=float, default=defaults["learning_rate"])
+    parser.add_argument("--random_state", type=int, default=defaults["random_state"])
     parser.add_argument(
         "--hidden_layer_sizes",
         type=lambda value: tuple(int(n) for n in value.split(",")),
@@ -97,34 +82,31 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--alpha", type=float, default=defaults["alpha"])
     parser.add_argument(
-        "--learning_rate_init", type=float,
+        "--learning_rate_init",
+        type=float,
         default=defaults["learning_rate_init"],
     )
     parser.add_argument("--max_iter", type=int, default=defaults["max_iter"])
     return parser.parse_args()
 
 
-def build_model(
-    cfg: DatasetConfig, model_type: str, hyperparams: dict, seed: int
-) -> Pipeline:
+def build_model(cfg: DatasetConfig, model_type: str, hyperparams: dict, seed: int) -> Pipeline:
     cls, _ = MODELS[model_type]
     extra = {"random_state": seed} if model_type != "dummy" else {"strategy": "prior"}
 
     if model_type == "logistic_regression":
         extra["max_iter"] = 1000
 
-    return Pipeline([
-        ("preprocess", cfg.build_preprocessor()),
-        ("model", cls(**hyperparams, **extra)),
-    ])
+    return Pipeline(
+        [
+            ("preprocess", cfg.build_preprocessor()),
+            ("model", cls(**hyperparams, **extra)),
+        ]
+    )
 
 
 def decision_threshold(cfg: DatasetConfig, class_weight, y_train: pd.Series) -> float:
-    k = (
-        (y_train == 0).sum() / (y_train == 1).sum()
-        if class_weight == "balanced"
-        else 1.0
-    )
+    k = (y_train == 0).sum() / (y_train == 1).sum() if class_weight == "balanced" else 1.0
     return cfg.cost_threshold(float(k))
 
 
@@ -152,45 +134,40 @@ def main() -> None:
     X_train, y_train = cfg.read_xy(TRAIN_CSV)
     X_validation, y_validation = cfg.read_xy(VALIDATION_CSV)
 
-    hyperparams = {
-        name: getattr(args, name) for name in MODELS[args.model][1]
-    }
-    threshold = decision_threshold(
-        cfg, hyperparams.get("class_weight"), y_train
+    hyperparams = {name: getattr(args, name) for name in MODELS[args.model][1]}
+    threshold = decision_threshold(cfg, hyperparams.get("class_weight"), y_train)
+    run_name = "-".join(
+        [
+            args.model,
+            *(f"{k}={v}" for k, v in hyperparams.items()),
+        ]
     )
-    run_name = "-".join([
-        args.model,
-        *(f"{k}={v}" for k, v in hyperparams.items()),
-    ])
-    launched_by = (
-        "dvc" if os.getenv("DVC_STAGE")
-        else os.getenv("LAUNCHED_BY", "manual")
-    )
+    launched_by = "dvc" if os.getenv("DVC_STAGE") else os.getenv("LAUNCHED_BY", "manual")
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     mlflow.set_experiment(EXPERIMENT)
 
     with mlflow.start_run(run_name=run_name) as run:
-        mlflow.set_tags({
-            "model_type": args.model,
-            "dataset": cfg.name,
-            "evaluation_split": "validation",
-            "protocol": "train6400-val1600-test2000",
-            "data_md5": file_md5(cfg.raw_path),
-            "launched_by": launched_by,
-        })
-        mlflow.log_params({
-            "model": args.model,
-            "random_state": args.random_state,
-            **hyperparams,
-        })
+        mlflow.set_tags(
+            {
+                "model_type": args.model,
+                "dataset": cfg.name,
+                "evaluation_split": "validation",
+                "protocol": "train6400-val1600-test2000",
+                "data_md5": file_md5(cfg.raw_path),
+                "launched_by": launched_by,
+            }
+        )
+        mlflow.log_params(
+            {
+                "model": args.model,
+                "random_state": args.random_state,
+                **hyperparams,
+            }
+        )
         mlflow.log_param("decision_threshold", round(threshold, 4))
 
-        model = build_model(
-            cfg, args.model, hyperparams, args.random_state
-        )
+        model = build_model(cfg, args.model, hyperparams, args.random_state)
         model.fit(X_train, y_train)
 
         metrics = compute_metrics(
@@ -223,11 +200,7 @@ def main() -> None:
             },
         )
 
-        summary = ", ".join(
-            f"{k}={v:.3f}"
-            for k, v in metrics.items()
-            if k != "business_cost"
-        )
+        summary = ", ".join(f"{k}={v:.3f}" for k, v in metrics.items() if k != "business_cost")
         print(
             f"{run_name}: seuil={threshold:.3f}, "
             f"{summary}, business_cost={metrics['business_cost']:.0f}"

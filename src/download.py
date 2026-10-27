@@ -27,9 +27,11 @@ def from_uci() -> pd.DataFrame:
     with urllib.request.urlopen(UCI_ZIP_URL, timeout=60) as response:
         content = response.read()
 
-    with zipfile.ZipFile(io.BytesIO(content)) as archive:
-        with archive.open("ai4i2020.csv") as csv_file:
-            return pd.read_csv(csv_file)
+    with (
+        zipfile.ZipFile(io.BytesIO(content)) as archive,
+        archive.open("ai4i2020.csv") as csv_file,
+    ):
+        return pd.read_csv(csv_file)
 
 
 def main() -> int:
@@ -40,9 +42,7 @@ def main() -> int:
     cfg = load_config()
 
     if cfg.name != "ai4i-predictive-maintenance":
-        raise ValueError(
-            "Remplacez d'abord dataset.yaml par la configuration AI4I."
-        )
+        raise ValueError("Remplacez d'abord dataset.yaml par la configuration AI4I.")
 
     if args.from_file:
         df = pd.read_csv(args.from_file)
@@ -64,10 +64,7 @@ def main() -> int:
     df[cfg.columns].to_csv(out, index=False)
 
     share = cfg.encode_target(df[cfg.target]).mean()
-    print(
-        f"{len(df)} lignes ({source}) -> {out} · "
-        f"classe '{cfg.positive_class}' : {share:.2%}"
-    )
+    print(f"{len(df)} lignes ({source}) -> {out} · classe '{cfg.positive_class}' : {share:.2%}")
     return 0
 
 
