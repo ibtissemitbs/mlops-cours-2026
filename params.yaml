@@ -15,3 +15,12 @@ train:
   alpha: 0.0001
   learning_rate_init: 0.001
   max_iter: 500
+# Lab 3 : détection de drift
+drift:
+  ks_alpha: 0.05
+  psi_threshold: 0.25
+  drift_share: 0.1
+  simulation:
+    shift:
+      "Air temperature [K]": 3.0
+      "Process temperature [K]": 3.0

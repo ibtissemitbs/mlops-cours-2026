@@ -91,8 +91,14 @@ class DatasetConfig:
             )
 
     def encode_target(self, y: pd.Series) -> pd.Series:
-        """1 pour la classe positive (``target.positive_class``), 0 sinon."""
-        return (y.astype(str) == str(self.positive_class)).astype(int).rename(self.target)
+        """1 pour la classe positive, 0 sinon."""
+        if isinstance(self.positive_class, (int, float)):
+            values = pd.to_numeric(y, errors="coerce")
+            positive = values.eq(self.positive_class)
+        else:
+            positive = y.astype("string").eq(str(self.positive_class))
+
+        return positive.fillna(False).astype(int).rename(self.target)
 
     def split_xy(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         """Sépare features et cible encodée 0/1."""

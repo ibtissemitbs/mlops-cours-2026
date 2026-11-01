@@ -7,6 +7,7 @@ from kfp.dsl import (
     Artifact,
     ClassificationMetrics,
     Dataset,
+    HTML,
     Input,
     Metrics,
     Model,
@@ -15,7 +16,7 @@ from kfp.dsl import (
 
 PIPELINE_IMAGE = os.getenv(
     "PIPELINE_IMAGE",
-    "localhost:5001/scoring-pipeline:1.0.0",
+    "localhost:5001/scoring-pipeline:1.2.2",
 )
 MLFLOW_URI = "http://mlflow.mlflow:5000"
 
@@ -34,6 +35,7 @@ def ingest_data(raw_data: Output[Dataset]) -> None:
         "src.download",
         outputs={cfg.raw_path: raw_data.path},
     )
+
     raw_data.metadata["dataset"] = cfg.name
     raw_data.metadata["rows"] = len(pd.read_csv(raw_data.path))
     raw_data.metadata["md5"] = file_md5(raw_data.path)
@@ -44,24 +46,30 @@ def validate_data(
     raw_data: Input[Dataset],
     report: Output[Artifact],
     checks: Output[Metrics],
+    html_report: Output[HTML],
 ) -> None:
-    """Arrête le pipeline si les données ne respectent pas le contrat."""
+    """Valide les données avec GX et publie les rapports."""
     import json
     from pathlib import Path
 
     from pipelines.stage import run_stage
     from src.dataset_config import load_config
-    from src.validate_data import REPORT_JSON
+    from src.validate_data import REPORT_HTML, REPORT_JSON
 
     cfg = load_config()
     run_stage(
         "src.validate_data",
         inputs={cfg.raw_path: raw_data.path},
-        outputs={str(REPORT_JSON): report.path},
+        outputs={
+            str(REPORT_JSON): report.path,
+            str(REPORT_HTML): html_report.path,
+        },
     )
+
     summary = json.loads(Path(report.path).read_text())
     for name in ("n_checks", "n_failed", "rows", "positive_rate"):
-        checks.log_metric(name, summary[name])
+        if summary[name] is not None:
+            checks.log_metric(name, summary[name])
 
 
 @dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
@@ -88,6 +96,7 @@ def prepare_features(
             str(TEST_CSV): test_data.path,
         },
     )
+
     for split in (train_data, validation_data, test_data):
         y = cfg.encode_target(pd.read_csv(split.path)[cfg.target])
         split.metadata["rows"] = len(y)
@@ -160,12 +169,23 @@ def train_model(
             "LAUNCHED_BY": "kfp",
         },
     )
+
     metadata = MlflowModel.load(model.path).metadata
     run_id = metadata["mlflow_run_id"]
-    MlflowClient(mlflow_uri).set_tag(run_id, "kfp_run_id", kfp_run_id)
+
+    MlflowClient(mlflow_uri).set_tag(
+        run_id,
+        "kfp_run_id",
+        kfp_run_id,
+    )
+
     model.metadata["mlflow_run_id"] = run_id
     model.metadata["model_type"] = model_type
-    model.metadata["decision_threshold"] = round(float(metadata["decision_threshold"]), 4)
+    model.metadata["decision_threshold"] = round(
+        float(metadata["decision_threshold"]),
+        4,
+    )
+
     return run_id
 
 
@@ -201,22 +221,31 @@ def evaluate_model(
         outputs={str(METRICS_JSON): report.path},
         env={"MLFLOW_TRACKING_URI": mlflow_uri},
     )
-    results = json.loads(Path(report.path).read_text())
 
+    results = json.loads(Path(report.path).read_text())
     client = MlflowClient(mlflow_uri)
+
     for name, value in results.items():
         if isinstance(value, (int, float)):
             metrics.log_metric(name, value)
             client.log_metric(run_id, f"test_{name}", float(value))
 
     positive = str(cfg.positive_class)
-    others = sorted(set(pd.read_csv(test_data.path)[cfg.target].astype(str)) - {positive})
+    others = sorted(
+        set(pd.read_csv(test_data.path)[cfg.target].astype(str))
+        - {positive}
+    )
     negative = others[0] if len(others) == 1 else f"non {positive}"
+
     c = results["confusion"]
     confusion.log_confusion_matrix(
         [negative, positive],
-        [[c["tn"], c["fp"]], [c["fn"], c["tp"]]],
+        [
+            [c["tn"], c["fp"]],
+            [c["fn"], c["tp"]],
+        ],
     )
+
     client.log_dict(run_id, results, str(METRICS_JSON))
     return float(results[cfg.primary_metric])
 
@@ -234,9 +263,111 @@ def register_model(run_id: str, mlflow_uri: str) -> str:
         args=["--run-id", run_id],
         env={"MLFLOW_TRACKING_URI": mlflow_uri},
     )
+
     versions = MlflowClient(mlflow_uri).search_model_versions(
         f"name = '{MODEL_NAME}' and run_id = '{run_id}'"
     )
+
     if not versions:
-        raise RuntimeError("Modèle absent du Registry après enregistrement.")
+        raise RuntimeError(
+            "Modèle absent du Registry après enregistrement."
+        )
+
     return str(versions[0].version)
+@dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
+def detect_drift(
+    reference_data: Input[Dataset],
+    current_data: Input[Dataset],
+    report: Output[Artifact],
+    html_report: Output[HTML],
+    drift: Output[Metrics],
+    ks_alpha: float = 0.05,
+    psi_threshold: float = 0.25,
+    drift_share: float = 0.1,
+    fail_on_drift: bool = True,
+) -> None:
+    """Compare les distributions et bloque si un drift est détecté."""
+    import json
+    from pathlib import Path
+
+    from pipelines.stage import run_stage
+    from src.detect_drift import REPORT_HTML, REPORT_JSON
+
+    args = [
+        "data/reference.csv",
+        "data/current.csv",
+        "--ks-alpha",
+        ks_alpha,
+        "--psi-threshold",
+        psi_threshold,
+        "--drift-share",
+        drift_share,
+    ]
+
+    if not fail_on_drift:
+        args.append("--no-fail")
+
+    run_stage(
+        "src.detect_drift",
+        args=args,
+        inputs={
+            "data/reference.csv": reference_data.path,
+            "data/current.csv": current_data.path,
+        },
+        outputs={
+            str(REPORT_JSON): report.path,
+            str(REPORT_HTML): html_report.path,
+        },
+    )
+
+    summary = json.loads(Path(report.path).read_text())
+
+    drift.log_metric("n_columns", summary["n_columns"])
+    drift.log_metric("n_drifted", summary["n_drifted"])
+    drift.log_metric("share_drifted", summary["share_drifted"])
+    drift.log_metric(
+        "drift_detected",
+        int(summary["drift_detected"]),
+    )
+@dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
+def validate_model(
+    model: Input[Model],
+    train_data: Input[Dataset],
+    test_data: Input[Dataset],
+    report: Output[Artifact],
+    html_report: Output[HTML],
+    checks: Output[Metrics],
+) -> None:
+    """Valide le modèle avant son enregistrement."""
+    import json
+    from pathlib import Path
+
+    from pipelines.stage import run_stage
+    from src.train import MODEL_DIR, TEST_CSV, TRAIN_CSV
+    from src.validate_model import REPORT_HTML, REPORT_JSON
+
+    run_stage(
+        "src.validate_model",
+        inputs={
+            str(MODEL_DIR): model.path,
+            str(TRAIN_CSV): train_data.path,
+            str(TEST_CSV): test_data.path,
+        },
+        outputs={
+            str(REPORT_JSON): report.path,
+            str(REPORT_HTML): html_report.path,
+        },
+    )
+
+    summary = json.loads(Path(report.path).read_text())
+
+    for name in ("n_checks", "n_failed", "n_skipped"):
+        checks.log_metric(name, summary[name])
+
+    from src.dataset_config import load_config
+
+    cfg = load_config()
+    checks.log_metric(
+        cfg.primary_metric,
+        summary[cfg.primary_metric],
+    )

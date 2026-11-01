@@ -7,4 +7,10 @@ pipelines/*
 !pipelines/requirements.txt
 !pipelines/__init__.py
 !pipelines/stage.py
+!gx/
+!gx/**
+gx/uncommitted/
+!tests/
+!tests/test_model_behavior.py
+!tests/behavior.yaml
 **/__pycache__

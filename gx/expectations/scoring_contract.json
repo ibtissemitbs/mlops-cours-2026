@@ -1,0 +1,333 @@
+{
+  "expectations": [
+    {
+      "id": "3b8762e3-2afe-4bcd-be72-45de9fcce735",
+      "kwargs": {
+        "column_set": [
+          "Air temperature [K]",
+          "Process temperature [K]",
+          "Rotational speed [rpm]",
+          "Torque [Nm]",
+          "Tool wear [min]",
+          "Type",
+          "Machine failure"
+        ],
+        "exact_match": false
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_table_columns_to_match_set"
+    },
+    {
+      "id": "91e8056c-8692-4506-877f-89f35260317e",
+      "kwargs": {
+        "min_value": 640
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_table_row_count_to_be_between"
+    },
+    {
+      "id": "5c286995-4f25-47c1-9027-a36fe4da980d",
+      "kwargs": {
+        "column": "Air temperature [K]"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "4fc0ab4e-fbc3-490d-bfc4-edafb9a45a9d",
+      "kwargs": {
+        "column": "Air temperature [K]",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "42632d6a-71b0-4e7c-8c7e-07558e836c07",
+      "kwargs": {
+        "column": "Process temperature [K]"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "3776b4bd-4581-44e1-9369-aa3b740f211e",
+      "kwargs": {
+        "column": "Process temperature [K]",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "6d805cd3-80f0-4371-95fd-e1198d1ae6da",
+      "kwargs": {
+        "column": "Rotational speed [rpm]"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "27c4b3d4-3fc0-4f09-9432-5797ac2064fb",
+      "kwargs": {
+        "column": "Rotational speed [rpm]",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "74473e9d-8c1f-4faa-8b0c-3c7aee515db1",
+      "kwargs": {
+        "column": "Torque [Nm]"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "a9f66707-527f-4a95-9ad4-beb8ff179420",
+      "kwargs": {
+        "column": "Torque [Nm]",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "c9e0ff21-c258-4cbc-92f3-f6975e2c94b7",
+      "kwargs": {
+        "column": "Tool wear [min]"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "285045e1-0018-4970-b802-3e90f5ad2c58",
+      "kwargs": {
+        "column": "Tool wear [min]",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "a70c89ef-8123-4c81-86bc-4f6fa93420f1",
+      "kwargs": {
+        "column": "Type"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "0d2eca79-5b3b-40ec-bce9-5fc2ac0c95d0",
+      "kwargs": {
+        "column": "Type",
+        "type_list": [
+          "object",
+          "str",
+          "string",
+          "category"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "53722f29-feba-4a82-a5ab-b4b6ac2a46e9",
+      "kwargs": {
+        "column": "Machine failure"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "2acfd7f1-33d7-4343-bec7-b8302d92a4c4",
+      "kwargs": {
+        "column": "Machine failure",
+        "type_list": [
+          "int64",
+          "int32",
+          "float64",
+          "float32",
+          "Int64",
+          "Float64"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_type_list"
+    },
+    {
+      "id": "5117743d-f1bc-4fa2-a704-4998cbd1071b",
+      "kwargs": {
+        "column": "Air temperature [K]",
+        "max_value": 313.7,
+        "min_value": 0.0,
+        "mostly": 0.99
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "9b4f66ec-c01c-484a-b9bf-dced81f615d2",
+      "kwargs": {
+        "column": "Process temperature [K]",
+        "max_value": 321.90000000000003,
+        "min_value": 0.0,
+        "mostly": 0.99
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "c72e3a99-9391-4146-a557-18df872db190",
+      "kwargs": {
+        "column": "Rotational speed [rpm]",
+        "max_value": 4554.0,
+        "min_value": 0.0,
+        "mostly": 0.99
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "05a3a0be-d394-406a-bb56-5636ba6dca52",
+      "kwargs": {
+        "column": "Torque [Nm]",
+        "max_value": 147.8,
+        "min_value": 0.0,
+        "mostly": 0.99
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "1a789e78-e77a-48ee-a852-d4a04adb828a",
+      "kwargs": {
+        "column": "Tool wear [min]",
+        "max_value": 506.0,
+        "min_value": 0.0,
+        "mostly": 0.99
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "83d19684-86fe-411b-ba38-60b0397fa803",
+      "kwargs": {
+        "column": "Type",
+        "mostly": 0.99,
+        "value_set": [
+          "H",
+          "L",
+          "M"
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    },
+    {
+      "id": "97f6e7e5-9ff2-4651-aa51-a0ed3bb2385e",
+      "kwargs": {
+        "column": "Machine failure",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    },
+    {
+      "description": "Au moins 1.70% de classe positive",
+      "id": "8433f3f2-99c0-428f-abf2-6b98543ebac5",
+      "kwargs": {
+        "column": "Machine failure",
+        "mostly": 0.017,
+        "value_set": [
+          1
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    },
+    {
+      "description": "Au plus 6.78% de classe positive",
+      "id": "bec2b403-6b2e-4f6d-9e86-fbfdcb2c012c",
+      "kwargs": {
+        "column": "Machine failure",
+        "mostly": 0.932,
+        "value_set": [
+          0
+        ]
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_in_set"
+    }
+  ],
+  "id": "ba77ab86-8a44-4753-8acc-7cb173fd6f29",
+  "meta": {
+    "great_expectations_version": "1.23.2"
+  },
+  "name": "scoring_contract",
+  "notes": null
+}
