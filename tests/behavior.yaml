@@ -1,0 +1,15 @@
+# Une petite variation de mesure devrait rarement changer la décision.
+invariance:
+  - column: "Air temperature [K]"
+    shift: 0.1
+    max_flip_rate: 0.05
+
+# Hypothèse pédagogique sur l'usure de l'outil.
+directional:
+  - column: "Tool wear [min]"
+    factor: 1.2
+    expect: increase
+
+tolerance: 0.05
+max_violation_rate: 0.05
+min_group_size: 30

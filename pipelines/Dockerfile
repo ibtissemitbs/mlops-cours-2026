@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir --root-user-action=ignore -r /tmp/requirements.tx
 
 COPY dataset.yaml params.yaml ./
 COPY src/ src/
+COPY gx/ gx/
+COPY tests/test_model_behavior.py tests/behavior.yaml tests/
 COPY pipelines/__init__.py pipelines/stage.py pipelines/
 
 ENV PYTHONPATH=/app \

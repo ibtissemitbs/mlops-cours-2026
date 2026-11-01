@@ -49,14 +49,26 @@ def run_stage(
     outputs=None,
     env=None,
 ) -> None:
-    """Copie les entrées, exécute l'étape et récupère les sorties."""
+    """Exécute une étape et conserve ses rapports même en cas d'échec."""
     with tempfile.TemporaryDirectory(prefix="stage-") as tmp:
         work = Path(tmp)
+
         for rel, src in (inputs or {}).items():
             copy(src, work / rel)
-        execute(module, args, work, env)
-        for rel, dst in (outputs or {}).items():
-            copy(work / rel, dst)
+
+        try:
+            execute(module, args, work, env)
+        except subprocess.CalledProcessError:
+            # Récupérer les rapports disponibles avant de transmettre l'échec.
+            for rel, dst in (outputs or {}).items():
+                source = work / rel
+                if source.exists():
+                    copy(source, dst)
+            raise
+        else:
+            # En cas de succès, toutes les sorties demandées doivent exister.
+            for rel, dst in (outputs or {}).items():
+                copy(work / rel, dst)
 
 
 def _s3(workspace: str):
