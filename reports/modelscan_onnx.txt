@@ -1,0 +1,17 @@
+No settings file detected at /home/ibtissem/mlops-cours-2026/modelscan-settings.toml. Using defaults.
+
+
+--- Summary ---
+
+ No issues found! 🎉
+
+--- Skipped ---
+
+Total skipped: 1 - run with --show-skipped to see the full list.
+
+Skipped files list:
+
+The following file
+/home/ibtissem/mlops-cours-2026/packaging/model/model.onnx was skipped
+during a ModelScan scan:
+Model Scan did not scan file

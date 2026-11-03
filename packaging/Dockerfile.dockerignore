@@ -1,0 +1,13 @@
+**
+!dataset.yaml
+!src/
+!src/__init__.py
+!src/dataset_config.py
+!packaging/
+!packaging/requirements.txt
+!packaging/app/
+!packaging/app/__init__.py
+!packaging/app/serve.py
+!packaging/model/
+!packaging/model/model.onnx
+!packaging/model/metadata.json
