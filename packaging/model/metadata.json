@@ -1,0 +1,26 @@
+{
+  "dataset": "ai4i-predictive-maintenance",
+  "model_name": "scoring-model",
+  "model_alias": "champion",
+  "model_version": "1",
+  "run_id": "24c01829976a44c9ad915964dc2d3b31",
+  "target": "Machine failure",
+  "positive_class": "1",
+  "threshold": 0.1667,
+  "threshold_source": "param decision_threshold du run",
+  "features": {
+    "numeric": [
+      "Air temperature [K]",
+      "Process temperature [K]",
+      "Rotational speed [rpm]",
+      "Torque [Nm]",
+      "Tool wear [min]"
+    ],
+    "categorical": [
+      "Type"
+    ]
+  },
+  "onnx_opset": 17,
+  "onnx_sha256": "e01f18791beeebcf453ebbf25eaf2417df97cd8001972dbccb72914d33499dc5",
+  "exported_at": "2026-11-01T21:01:09+00:00"
+}
