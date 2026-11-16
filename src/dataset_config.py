@@ -107,6 +107,8 @@ class DatasetConfig:
 
     def sensitive_frame(self, df: pd.DataFrame) -> pd.DataFrame:
         """Un DataFrame avec un groupe par attribut sensible (pour Fairlearn)."""
+        if not self.sensitive:
+            return pd.DataFrame(index=df.index)
         return pd.concat([s.groups(df) for s in self.sensitive], axis=1)
 
     # ------------------------------------------------------------- modélisation

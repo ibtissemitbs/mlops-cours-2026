@@ -1,0 +1,7 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: scoring-model
+spec:
+  predictor:
+    canaryTrafficPercent: 100

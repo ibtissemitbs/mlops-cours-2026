@@ -13,27 +13,20 @@ import onnxruntime as ort
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402
 
 
 def main():
     cfg = load_config(ROOT / "dataset.yaml")
     model_dir = ROOT / "packaging/model"
 
-    metadata = json.loads(
-        (model_dir / "metadata.json").read_text(encoding="utf-8")
-    )
+    metadata = json.loads((model_dir / "metadata.json").read_text(encoding="utf-8"))
     threshold = float(metadata["threshold"])
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
     # Charger exactement la version utilisée pendant l'export.
-    model_uri = (
-        f"models:/{metadata['model_name']}/"
-        f"{metadata['model_version']}"
-    )
+    model_uri = f"models:/{metadata['model_name']}/{metadata['model_version']}"
     model = mlflow.sklearn.load_model(model_uri)
 
     X, _ = cfg.read_xy(ROOT / "data/processed/test.csv")
@@ -50,22 +43,15 @@ def main():
     onnx_inputs = session.get_inputs()
 
     if len(onnx_inputs) != len(columns):
-        raise ValueError(
-            "Le nombre d'entrées ONNX ne correspond pas au contrat."
-        )
+        raise ValueError("Le nombre d'entrées ONNX ne correspond pas au contrat.")
 
     inputs = {}
 
-    for column, onnx_input in zip(columns, onnx_inputs):
+    for column, onnx_input in zip(columns, onnx_inputs, strict=True):
         if column in cfg.numeric:
             values = X[column].to_numpy(dtype=np.float64)
         else:
-            values = (
-                X[column]
-                .fillna("")
-                .astype(str)
-                .to_numpy()
-            )
+            values = X[column].fillna("").astype(str).to_numpy()
 
         inputs[onnx_input.name] = values.reshape(-1, 1)
         print(f"{column} → {onnx_input.name}")
@@ -78,21 +64,11 @@ def main():
     sklearn_predictions = sklearn_proba >= threshold
     onnx_predictions = onnx_proba >= threshold
 
-    disagreements = int(
-        np.count_nonzero(
-            sklearn_predictions != onnx_predictions
-        )
-    )
+    disagreements = int(np.count_nonzero(sklearn_predictions != onnx_predictions))
 
     print(f"\nLignes comparées : {len(X)}")
-    print(
-        f"Écart maximal des probabilités : "
-        f"{differences.max():.8f}"
-    )
-    print(
-        f"Écart moyen des probabilités : "
-        f"{differences.mean():.8f}"
-    )
+    print(f"Écart maximal des probabilités : {differences.max():.8f}")
+    print(f"Écart moyen des probabilités : {differences.mean():.8f}")
     print(f"Décisions différentes : {disagreements}")
     print(f"Seuil de décision : {threshold}")
 
@@ -101,15 +77,10 @@ def main():
         sklearn_proba,
         atol=1e-4,
         rtol=0,
-        err_msg=(
-            "Les probabilités ONNX diffèrent trop "
-            "de scikit-learn."
-        ),
+        err_msg=("Les probabilités ONNX diffèrent trop de scikit-learn."),
     )
 
-    assert disagreements == 0, (
-        f"{disagreements} décisions différentes après conversion."
-    )
+    assert disagreements == 0, f"{disagreements} décisions différentes après conversion."
 
     print("Vérification réussie : conversion ONNX fidèle.")
 

@@ -11,9 +11,7 @@ from src.dataset_config import load_config
 from src.train import MODEL_DIR, TEST_CSV, compute_metrics
 
 CFG = load_config()
-EXPECT = yaml.safe_load(
-    Path(__file__).with_name("behavior.yaml").read_text(encoding="utf-8")
-)
+EXPECT = yaml.safe_load(Path(__file__).with_name("behavior.yaml").read_text(encoding="utf-8"))
 
 pytestmark = pytest.mark.skipif(
     not (MODEL_DIR / "MLmodel").exists() or not TEST_CSV.exists(),
@@ -54,8 +52,7 @@ def test_metrique_primaire_au_seuil(model, data):
     value = metrics[CFG.primary_metric]
 
     assert value >= CFG.promotion_threshold, (
-        f"{CFG.primary_metric} = {value:.3f}, "
-        f"minimum attendu = {CFG.promotion_threshold:.3f}"
+        f"{CFG.primary_metric} = {value:.3f}, minimum attendu = {CFG.promotion_threshold:.3f}"
     )
 
 
@@ -72,9 +69,9 @@ def test_cout_metier_inferieur_aux_politiques_naives(model, data):
     )
 
     assert cost < best_naive_cost, (
-        f"Coût du modèle = {cost}, "
-        f"coût de la meilleure politique naïve = {best_naive_cost}"
+        f"Coût du modèle = {cost}, coût de la meilleure politique naïve = {best_naive_cost}"
     )
+
 
 @pytest.mark.parametrize(
     "case",
@@ -86,9 +83,7 @@ def test_invariance(model, data, case):
     X, _, _ = data
     col = case["column"]
 
-    assert col in CFG.numeric, (
-        f"Variable numérique du contrat attendue : {col}"
-    )
+    assert col in CFG.numeric, f"Variable numérique du contrat attendue : {col}"
     shift = float(case["shift"])
     assert shift > 0, "La perturbation doit être strictement positive."
 
@@ -99,15 +94,15 @@ def test_invariance(model, data, case):
         modified[col] = modified[col] + direction * shift
 
         modified_decisions = risk(model, modified) >= model[1]
-        flip_rate = float(
-            np.mean(original_decisions != modified_decisions)
-        )
+        flip_rate = float(np.mean(original_decisions != modified_decisions))
 
         assert flip_rate <= case["max_flip_rate"], (
             f"{col}, variation {direction * shift:+g} : "
             f"{flip_rate:.1%} des décisions changent ; "
             f"maximum autorisé = {case['max_flip_rate']:.1%}"
         )
+
+
 @pytest.mark.parametrize(
     "case",
     EXPECT.get("directional") or [],
@@ -126,9 +121,7 @@ def test_directionnel(model, data, case):
     delta = risk(model, modified) - risk(model, X)
     sign = 1 if case["expect"] == "increase" else -1
 
-    violation_rate = float(
-        np.mean(sign * delta < -EXPECT["tolerance"])
-    )
+    violation_rate = float(np.mean(sign * delta < -EXPECT["tolerance"]))
 
     assert violation_rate <= EXPECT["max_violation_rate"], (
         f"{col} : {violation_rate:.1%} des lignes violent l'attente ; "
@@ -149,10 +142,7 @@ def test_performance_par_sous_groupe(model, data, attribute):
 
     for group in np.unique(groups):
         mask = groups == group
-        if (
-            int(mask.sum()) >= EXPECT["min_group_size"]
-            and y[mask].nunique() == 2
-        ):
+        if int(mask.sum()) >= EXPECT["min_group_size"] and y[mask].nunique() == 2:
             metrics = compute_metrics(
                 CFG,
                 y[mask],
@@ -164,9 +154,5 @@ def test_performance_par_sous_groupe(model, data, attribute):
     if not scores:
         pytest.skip("Aucun sous-groupe suffisamment grand avec deux classes.")
 
-    below = {
-        group: score
-        for group, score in scores.items()
-        if score < CFG.promotion_threshold
-    }
+    below = {group: score for group, score in scores.items() if score < CFG.promotion_threshold}
     assert not below, f"Sous-groupes sous le seuil : {below}"

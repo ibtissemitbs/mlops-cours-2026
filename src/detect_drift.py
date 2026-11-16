@@ -28,9 +28,7 @@ def psi(ref: pd.Series, cur: pd.Series) -> float:
         raise ValueError("Impossible de comparer une colonne sans valeurs.")
 
     if pd.api.types.is_numeric_dtype(ref) and ref.nunique() > BINS:
-        edges = np.unique(
-            np.quantile(ref, np.linspace(0, 1, BINS + 1))
-        )
+        edges = np.unique(np.quantile(ref, np.linspace(0, 1, BINS + 1)))
         edges[0] = -np.inf
         edges[-1] = np.inf
 
@@ -38,16 +36,8 @@ def psi(ref: pd.Series, cur: pd.Series) -> float:
         c = np.histogram(cur, edges)[0] / len(cur)
     else:
         values = sorted(set(ref) | set(cur), key=str)
-        r = (
-            ref.value_counts(normalize=True)
-            .reindex(values, fill_value=0)
-            .to_numpy()
-        )
-        c = (
-            cur.value_counts(normalize=True)
-            .reindex(values, fill_value=0)
-            .to_numpy()
-        )
+        r = ref.value_counts(normalize=True).reindex(values, fill_value=0).to_numpy()
+        c = cur.value_counts(normalize=True).reindex(values, fill_value=0).to_numpy()
 
     r = np.clip(r, 1e-4, None)
     c = np.clip(c, 1e-4, None)
@@ -110,10 +100,7 @@ def detect(cfg, ref, cur, ks_alpha, psi_threshold) -> list:
 
     for col in cfg.columns:
         stats = column_drift(ref[col], cur[col], col in numeric)
-        drift = (
-            stats["p_value"] < ks_alpha
-            and stats["psi"] >= psi_threshold
-        )
+        drift = stats["p_value"] < ks_alpha and stats["psi"] >= psi_threshold
         rows.append({"column": col, **stats, "drift": bool(drift)})
 
     return rows
@@ -127,17 +114,17 @@ def evidently_report(cfg, ref, cur, drift_share, path) -> None:
     numeric = numeric_columns(cfg, ref)
     definition = DataDefinition(
         numerical_columns=numeric,
-        categorical_columns=[
-            col for col in cfg.columns if col not in numeric
-        ],
+        categorical_columns=[col for col in cfg.columns if col not in numeric],
     )
 
-    report = Report([
-        DataDriftPreset(
-            columns=cfg.columns,
-            drift_share=drift_share,
-        )
-    ])
+    report = Report(
+        [
+            DataDriftPreset(
+                columns=cfg.columns,
+                drift_share=drift_share,
+            )
+        ]
+    )
 
     snapshot = report.run(
         Dataset.from_pandas(
@@ -157,19 +144,14 @@ def evidently_report(cfg, ref, cur, drift_share, path) -> None:
 def markdown(rows, summary) -> str:
     verdict = "DRIFT" if summary["drift_detected"] else "pas de drift"
     lines = [
-        f"### Drift : {summary['n_drifted']}/{summary['n_columns']} "
-        f"colonnes ({verdict})",
+        f"### Drift : {summary['n_drifted']}/{summary['n_columns']} colonnes ({verdict})",
         "",
         "| Colonne | Test | p-value | PSI | Wasserstein | Verdict |",
         "|---|---|---|---|---|---|",
     ]
 
     for row in sorted(rows, key=lambda item: -item["psi"]):
-        distance = (
-            ""
-            if row["wasserstein"] is None
-            else f"{row['wasserstein']:.3f}"
-        )
+        distance = "" if row["wasserstein"] is None else f"{row['wasserstein']:.3f}"
         status = "DRIFT" if row["drift"] else "OK"
         lines.append(
             f"| {row['column']} | {row['test']} "
@@ -181,28 +163,18 @@ def markdown(rows, summary) -> str:
 
 
 def main() -> int:
-    defaults = yaml.safe_load(
-        Path("params.yaml").read_text(encoding="utf-8")
-    )["drift"]
+    defaults = yaml.safe_load(Path("params.yaml").read_text(encoding="utf-8"))["drift"]
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "reference", nargs="?", default=str(REFERENCE_CSV)
-    )
-    parser.add_argument(
-        "current", nargs="?", default=str(CURRENT_CSV)
-    )
-    parser.add_argument(
-        "--ks-alpha", type=float, default=defaults["ks_alpha"]
-    )
+    parser.add_argument("reference", nargs="?", default=str(REFERENCE_CSV))
+    parser.add_argument("current", nargs="?", default=str(CURRENT_CSV))
+    parser.add_argument("--ks-alpha", type=float, default=defaults["ks_alpha"])
     parser.add_argument(
         "--psi-threshold",
         type=float,
         default=defaults["psi_threshold"],
     )
-    parser.add_argument(
-        "--drift-share", type=float, default=defaults["drift_share"]
-    )
+    parser.add_argument("--drift-share", type=float, default=defaults["drift_share"])
     parser.add_argument(
         "--no-fail",
         action="store_true",

@@ -26,14 +26,8 @@ Categorical = Annotated[
 Instance = create_model(
     "Instance",
     __config__=ConfigDict(extra="forbid"),
-    **{
-        column: (Numeric, ...)
-        for column in META["numeric"]
-    },
-    **{
-        column: (Categorical, ...)
-        for column in META["categorical"]
-    },
+    **{column: (Numeric, ...) for column in META["numeric"]},
+    **{column: (Categorical, ...) for column in META["categorical"]},
 )
 
 
@@ -46,9 +40,7 @@ class ScoringBento:
     bento_model = bentoml.models.BentoModel(MODEL_TAG)
 
     def __init__(self) -> None:
-        self.model = bentoml.sklearn.load_model(
-            self.bento_model
-        )
+        self.model = bentoml.sklearn.load_model(self.bento_model)
 
     @bentoml.api
     def predict(
@@ -67,9 +59,7 @@ class ScoringBento:
             df[column] = df[column].astype("float64")
 
         for column in META["categorical"]:
-            df[column] = df[column].where(
-                df[column].notna(), np.nan
-            )
+            df[column] = df[column].where(df[column].notna(), np.nan)
 
         probabilities = self.model.predict_proba(df)[:, 1]
 
@@ -80,9 +70,7 @@ class ScoringBento:
             "predictions": [
                 {
                     "probability": float(probability),
-                    "prediction": int(
-                        probability >= THRESHOLD
-                    ),
+                    "prediction": int(probability >= THRESHOLD),
                 }
                 for probability in probabilities
             ],

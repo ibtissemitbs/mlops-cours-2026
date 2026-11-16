@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: scoring-staging
+resources:
+  - ../../base
+images:
+  - name: scoring-api
+    newName: ghcr.io/ibtissemitbs/mlops-cours-2026/scoring-api
+    newTag: "0.0.0"
+patches:
+  - target:
+      kind: InferenceService
+      name: scoring-model
+    patch: |-
+      - op: replace
+        path: /spec/predictor/minReplicas
+        value: 0
+      - op: replace
+        path: /spec/predictor/maxReplicas
+        value: 1

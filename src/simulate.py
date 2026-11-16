@@ -39,10 +39,7 @@ def drift(df: pd.DataFrame, scenario: dict) -> pd.DataFrame:
         out[col] = (out[col] + delta).clip(df[col].min(), df[col].max())
 
     for col in out.columns:
-        if (
-            pd.api.types.is_integer_dtype(df[col])
-            and not pd.api.types.is_integer_dtype(out[col])
-        ):
+        if pd.api.types.is_integer_dtype(df[col]) and not pd.api.types.is_integer_dtype(out[col]):
             out[col] = out[col].round().astype(df[col].dtype)
 
     return out
@@ -61,9 +58,7 @@ def main() -> None:
     if args.kind == "corrupt":
         out = corrupt(cfg, df)
     else:
-        params = yaml.safe_load(
-            Path("params.yaml").read_text(encoding="utf-8")
-        )
+        params = yaml.safe_load(Path("params.yaml").read_text(encoding="utf-8"))
         out = drift(df, params["drift"]["simulation"])
 
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)

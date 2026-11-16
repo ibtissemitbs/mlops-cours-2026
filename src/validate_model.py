@@ -68,43 +68,38 @@ def evidently_checks(cfg, model, threshold: float) -> list:
 
     def dataset(path):
         X, y = cfg.read_xy(path)
-        frame = pd.DataFrame({
-            "target": y.to_numpy(),
-            "proba": positive_probability(model, X),
-        })
+        frame = pd.DataFrame(
+            {
+                "target": y.to_numpy(),
+                "proba": positive_probability(model, X),
+            }
+        )
         return Dataset.from_pandas(
             frame,
             data_definition=definition,
         )
 
     # Désactiver les tests automatiques pour utiliser ceux du lab.
-    tests = {
-        f"{name}_tests": []
-        for name in PRESET_METRICS
-    }
+    tests = {f"{name}_tests": [] for name in PRESET_METRICS}
 
     # Comparer la ROC AUC de test à celle d'entraînement.
-    tests["rocauc_tests"] = [
-        eq(Reference(relative=MAX_TRAIN_TEST_GAP))
-    ]
+    tests["rocauc_tests"] = [eq(Reference(relative=MAX_TRAIN_TEST_GAP))]
 
     # Exiger la performance minimale de dataset.yaml.
     if cfg.primary_metric not in EVIDENTLY_NAMES:
-        raise ValueError(
-            f"Métrique non prise en charge : {cfg.primary_metric}"
-        )
+        raise ValueError(f"Métrique non prise en charge : {cfg.primary_metric}")
 
     metric_name = EVIDENTLY_NAMES[cfg.primary_metric]
-    tests[f"{metric_name}_tests"].append(
-        gte(cfg.promotion_threshold)
-    )
+    tests[f"{metric_name}_tests"].append(gte(cfg.promotion_threshold))
 
-    report = Report([
-        ClassificationPreset(
-            probas_threshold=threshold,
-            **tests,
-        )
-    ])
+    report = Report(
+        [
+            ClassificationPreset(
+                probas_threshold=threshold,
+                **tests,
+            )
+        ]
+    )
 
     snapshot = report.run(
         dataset(TEST_CSV),
@@ -117,10 +112,12 @@ def evidently_checks(cfg, model, threshold: float) -> list:
     results = []
     for test in snapshot.dict()["tests"]:
         status = getattr(test["status"], "value", test["status"])
-        results.append({
-            "name": test["name"],
-            "success": status == "SUCCESS",
-        })
+        results.append(
+            {
+                "name": test["name"],
+                "success": status == "SUCCESS",
+            }
+        )
 
     if not results:
         raise RuntimeError("Aucun test Evidently n'a été exécuté.")
@@ -132,46 +129,51 @@ def behavior_checks() -> list:
     """Exécute les tests comportementaux et lit le rapport JUnit."""
     JUNIT_XML.parent.mkdir(parents=True, exist_ok=True)
 
-    code = pytest.main([
-        "-q",
-        "-p",
-        "no:cacheprovider",
-        "-W",
-        "ignore::pytest.PytestAssertRewriteWarning",
-        str(BEHAVIOR_TESTS),
-        f"--junitxml={JUNIT_XML}",
-    ])
+    code = pytest.main(
+        [
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "-W",
+            "ignore::pytest.PytestAssertRewriteWarning",
+            str(BEHAVIOR_TESTS),
+            f"--junitxml={JUNIT_XML}",
+        ]
+    )
 
     if code not in (
         pytest.ExitCode.OK,
         pytest.ExitCode.TESTS_FAILED,
     ):
-        return [{
-            "name": f"pytest : code retour {int(code)}",
-            "success": False,
-            "skipped": False,
-        }]
+        return [
+            {
+                "name": f"pytest : code retour {int(code)}",
+                "success": False,
+                "skipped": False,
+            }
+        ]
 
     results = []
     root = ElementTree.parse(JUNIT_XML).getroot()
 
     for case in root.iter("testcase"):
         skipped = case.find("skipped") is not None
-        results.append({
-            "name": case.get("name"),
-            "success": (
-                case.find("failure") is None
-                and case.find("error") is None
-            ),
-            "skipped": skipped,
-        })
+        results.append(
+            {
+                "name": case.get("name"),
+                "success": (case.find("failure") is None and case.find("error") is None),
+                "skipped": skipped,
+            }
+        )
 
     if not any(not item["skipped"] for item in results):
-        return [{
-            "name": "Aucun test comportemental exécuté",
-            "success": False,
-            "skipped": False,
-        }]
+        return [
+            {
+                "name": "Aucun test comportemental exécuté",
+                "success": False,
+                "skipped": False,
+            }
+        ]
 
     return results
 
@@ -189,8 +191,10 @@ def markdown(summary: dict) -> str:
         for check in summary[family]:
             if check.get("skipped"):
                 status = "IGNORÉ"
+            elif check["success"]:
+                status = "OK"
             else:
-                status = "OK" if check["success"] else "ÉCHEC"
+                status = "ÉCHEC"
 
             name = str(check["name"]).replace("|", "/")
             lines.append(f"| {family} | {name} | {status} |")
@@ -215,22 +219,15 @@ def main() -> int:
     evidently = evidently_checks(cfg, model, threshold)
     behavior = behavior_checks()
     checks = [*evidently, *behavior]
-    failed = [
-        check["name"] for check in checks
-        if not check["success"]
-    ]
+    failed = [check["name"] for check in checks if not check["success"]]
 
     summary = {
         "success": not failed,
         "n_checks": len(checks),
-        "n_skipped": sum(
-            bool(check.get("skipped")) for check in checks
-        ),
+        "n_skipped": sum(bool(check.get("skipped")) for check in checks),
         "n_failed": len(failed),
         "failed": failed,
-        cfg.primary_metric: round(
-            float(metrics[cfg.primary_metric]), 4
-        ),
+        cfg.primary_metric: round(float(metrics[cfg.primary_metric]), 4),
         "decision_threshold": threshold,
         "evidently": evidently,
         "behavior": behavior,

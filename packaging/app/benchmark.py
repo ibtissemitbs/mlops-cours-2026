@@ -15,7 +15,7 @@ import onnxruntime as ort
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402
 
 N = 1000
 
@@ -30,9 +30,7 @@ def bench(name, function):
     for _ in range(N):
         start = time.perf_counter()
         function()
-        durations.append(
-            (time.perf_counter() - start) * 1000
-        )
+        durations.append((time.perf_counter() - start) * 1000)
 
     return {
         "name": name,
@@ -45,21 +43,14 @@ def bench(name, function):
 def main():
     cfg = load_config(ROOT / "dataset.yaml")
 
-    metadata = json.loads(
-        (ROOT / "packaging/model/metadata.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    metadata = json.loads((ROOT / "packaging/model/metadata.json").read_text(encoding="utf-8"))
 
     X, _ = cfg.read_xy(ROOT / "data/processed/test.csv")
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
     model = mlflow.sklearn.load_model(
-        f"models:/{metadata['model_name']}/"
-        f"{metadata['model_version']}"
+        f"models:/{metadata['model_name']}/{metadata['model_version']}"
     )
 
     session = ort.InferenceSession(
@@ -71,32 +62,19 @@ def main():
     onnx_inputs = session.get_inputs()
 
     if len(columns) != len(onnx_inputs):
-        raise ValueError(
-            "Les entrées ONNX ne correspondent pas au contrat."
-        )
+        raise ValueError("Les entrées ONNX ne correspondent pas au contrat.")
 
-    input_names = {
-        column: entry.name
-        for column, entry in zip(columns, onnx_inputs)
-    }
+    input_names = {column: entry.name for column, entry in zip(columns, onnx_inputs, strict=True)}
 
     def onnx_feed(frame):
         inputs = {}
 
         for column in cfg.numeric:
-            inputs[input_names[column]] = (
-                frame[column]
-                .to_numpy(dtype=np.float64)
-                .reshape(-1, 1)
-            )
+            inputs[input_names[column]] = frame[column].to_numpy(dtype=np.float64).reshape(-1, 1)
 
         for column in cfg.categorical:
             inputs[input_names[column]] = (
-                frame[column]
-                .fillna("")
-                .astype(str)
-                .to_numpy(dtype=object)
-                .reshape(-1, 1)
+                frame[column].fillna("").astype(str).to_numpy(dtype=object).reshape(-1, 1)
             )
 
         return inputs
@@ -139,10 +117,7 @@ def main():
     speedup = results[0]["p50"] / results[1]["p50"]
 
     print("\n".join(table))
-    print(
-        f"\nAccélération ONNX sur une ligne, en P50 : "
-        f"x{speedup:.1f}"
-    )
+    print(f"\nAccélération ONNX sur une ligne, en P50 : x{speedup:.1f}")
 
     report = ROOT / "reports/benchmark.md"
     report.parent.mkdir(parents=True, exist_ok=True)

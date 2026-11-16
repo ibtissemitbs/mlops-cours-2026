@@ -71,9 +71,7 @@ def bad_data_pipeline():
         max_depth=str(PARAMS["max_depth"]),
         learning_rate=float(PARAMS["learning_rate"]),
         random_state=int(PARAMS["random_state"]),
-        hidden_layer_sizes=",".join(
-            str(n) for n in PARAMS["hidden_layer_sizes"]
-        ),
+        hidden_layer_sizes=",".join(str(n) for n in PARAMS["hidden_layer_sizes"]),
         alpha=float(PARAMS["alpha"]),
         learning_rate_init=float(PARAMS["learning_rate_init"]),
         max_iter=int(PARAMS["max_iter"]),

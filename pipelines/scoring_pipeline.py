@@ -18,9 +18,7 @@ from pipelines.components import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = yaml.safe_load(
-    (ROOT / "params.yaml").read_text(encoding="utf-8")
-)
+CONFIG = yaml.safe_load((ROOT / "params.yaml").read_text(encoding="utf-8"))
 PARAMS = CONFIG["train"]
 DRIFT = CONFIG["drift"]
 
@@ -40,9 +38,7 @@ def scoring_pipeline(
     max_depth: str = str(PARAMS["max_depth"]),
     learning_rate: float = float(PARAMS["learning_rate"]),
     random_state: int = int(PARAMS["random_state"]),
-    hidden_layer_sizes: str = ",".join(
-        str(n) for n in PARAMS["hidden_layer_sizes"]
-    ),
+    hidden_layer_sizes: str = ",".join(str(n) for n in PARAMS["hidden_layer_sizes"]),
     alpha: float = float(PARAMS["alpha"]),
     learning_rate_init: float = float(PARAMS["learning_rate_init"]),
     max_iter: int = int(PARAMS["max_iter"]),

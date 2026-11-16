@@ -26,19 +26,12 @@ class Payload:
 
 
 def main():
-    metadata = json.loads(
-        (ROOT / "packaging/model/metadata.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    metadata = json.loads((ROOT / "packaging/model/metadata.json").read_text(encoding="utf-8"))
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
     model = mlflow.sklearn.load_model(
-        f"models:/{metadata['model_name']}/"
-        f"{metadata['model_version']}"
+        f"models:/{metadata['model_name']}/{metadata['model_version']}"
     )
 
     with (HERE / "model.pkl").open("wb") as file:

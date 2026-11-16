@@ -4,10 +4,10 @@ import os
 
 from kfp import dsl
 from kfp.dsl import (
+    HTML,
     Artifact,
     ClassificationMetrics,
     Dataset,
-    HTML,
     Input,
     Metrics,
     Model,
@@ -231,10 +231,7 @@ def evaluate_model(
             client.log_metric(run_id, f"test_{name}", float(value))
 
     positive = str(cfg.positive_class)
-    others = sorted(
-        set(pd.read_csv(test_data.path)[cfg.target].astype(str))
-        - {positive}
-    )
+    others = sorted(set(pd.read_csv(test_data.path)[cfg.target].astype(str)) - {positive})
     negative = others[0] if len(others) == 1 else f"non {positive}"
 
     c = results["confusion"]
@@ -269,11 +266,11 @@ def register_model(run_id: str, mlflow_uri: str) -> str:
     )
 
     if not versions:
-        raise RuntimeError(
-            "Modèle absent du Registry après enregistrement."
-        )
+        raise RuntimeError("Modèle absent du Registry après enregistrement.")
 
     return str(versions[0].version)
+
+
 @dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
 def detect_drift(
     reference_data: Input[Dataset],
@@ -329,6 +326,8 @@ def detect_drift(
         "drift_detected",
         int(summary["drift_detected"]),
     )
+
+
 @dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
 def validate_model(
     model: Input[Model],
