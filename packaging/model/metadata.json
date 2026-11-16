@@ -2,8 +2,8 @@
   "dataset": "ai4i-predictive-maintenance",
   "model_name": "scoring-model",
   "model_alias": "champion",
-  "model_version": "15",
-  "run_id": "dbcf9499e3fd47048d52cb83737913bd",
+  "model_version": "17",
+  "run_id": "f0972f00b997470794d918082118589f",
   "target": "Machine failure",
   "positive_class": "1",
   "threshold": 0.1667,
@@ -21,6 +21,6 @@
     ]
   },
   "onnx_opset": 17,
-  "onnx_sha256": "f51e535b83626a51f6cd9b55f8774d8b542f849f8fd01575b92c34f4e48bb666",
-  "exported_at": "2026-11-16T21:30:28+00:00"
+  "onnx_sha256": "899cd831afe7901c6f23771549a5fd16580a965425059c329e7127bfcff42040",
+  "exported_at": "2026-11-16T22:04:15+00:00"
 }
