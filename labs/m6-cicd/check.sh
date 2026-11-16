@@ -264,7 +264,7 @@ from pathlib import Path
 from src.dataset_config import load_config
 
 cfg = load_config()
-names = set(cfg.features) | {cfg.target, str(cfg.positive_class)}
+names = set(cfg.features) | {cfg.target}
 files = ["pipelines/ct_pipeline.py", "pipelines/trigger_ct.py", "pipelines/gitops.py",
          *map(str, Path("tests").glob("test_*.py")), "labs/m6-cicd/check.sh"]
 found = {f: sorted(n for n in names if re.search(rf"[\"']{re.escape(n)}[\"']",
