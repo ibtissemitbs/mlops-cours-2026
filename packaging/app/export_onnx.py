@@ -20,7 +20,7 @@ from sklearn.compose import ColumnTransformer
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402
 
 MODEL_NAME = os.getenv("MODEL_NAME", "scoring-model")
 MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
@@ -32,11 +32,7 @@ def onnx_ready(model, cfg):
     """Adapte une copie du prétraitement pour la conversion ONNX."""
     pipeline = copy.deepcopy(model)
 
-    pre = next(
-        step
-        for _, step in pipeline.steps
-        if isinstance(step, ColumnTransformer)
-    )
+    pre = next(step for _, step in pipeline.steps if isinstance(step, ColumnTransformer))
 
     if cfg.categorical:
         categorical = pre.named_transformers_["cat"]
@@ -48,13 +44,9 @@ def onnx_ready(model, cfg):
         scaler = numeric.named_steps["scale"]
 
         # Conserver la précision du calcul avant l'entrée dans les arbres.
-        imputer.statistics_ = (
-            imputer.statistics_ - scaler.mean_
-        ) / scaler.scale_
+        imputer.statistics_ = (imputer.statistics_ - scaler.mean_) / scaler.scale_
 
-        cast = CastTransformer(dtype=np.float32).fit(
-            np.zeros((1, len(cfg.numeric)))
-        )
+        cast = CastTransformer(dtype=np.float32).fit(np.zeros((1, len(cfg.numeric))))
 
         numeric.steps = [
             ("scale", scaler),
@@ -68,26 +60,18 @@ def onnx_ready(model, cfg):
 def main():
     cfg = load_config(ROOT / "dataset.yaml")
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
     client = MlflowClient()
 
-    version = client.get_model_version_by_alias(
-        MODEL_NAME, MODEL_ALIAS
-    )
+    version = client.get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS)
     model_uri = f"models:/{MODEL_NAME}/{version.version}"
     model = mlflow.sklearn.load_model(model_uri)
 
     print(f"Modèle chargé : {model_uri}")
     print(f"Algorithme : {type(model.steps[-1][1]).__name__}")
 
-    initial_types = [
-        (column, DoubleTensorType([None, 1]))
-        for column in cfg.numeric
-    ] + [
-        (column, StringTensorType([None, 1]))
-        for column in cfg.categorical
+    initial_types = [(column, DoubleTensorType([None, 1])) for column in cfg.numeric] + [
+        (column, StringTensorType([None, 1])) for column in cfg.categorical
     ]
 
     onnx_model = to_onnx(

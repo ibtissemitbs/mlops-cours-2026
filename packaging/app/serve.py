@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402
 
 API_VERSION = os.getenv("APP_VERSION", "1.0.0")
 MAX_BATCH = int(os.getenv("MAX_BATCH", "1000"))
@@ -26,17 +26,11 @@ MODEL_PATH = Path(
     )
 )
 
-cfg = load_config(
-    os.getenv("DATASET_CONFIG", str(ROOT / "dataset.yaml"))
-)
+cfg = load_config(os.getenv("DATASET_CONFIG", str(ROOT / "dataset.yaml")))
 
-metadata = json.loads(
-    MODEL_PATH.with_name("metadata.json").read_text(encoding="utf-8")
-)
+metadata = json.loads(MODEL_PATH.with_name("metadata.json").read_text(encoding="utf-8"))
 
-THRESHOLD = float(
-    os.getenv("DECISION_THRESHOLD", str(metadata["threshold"]))
-)
+THRESHOLD = float(os.getenv("DECISION_THRESHOLD", str(metadata["threshold"])))
 MODEL_VERSION = str(metadata["model_version"])
 
 session = ort.InferenceSession(
@@ -49,13 +43,10 @@ columns = [*cfg.numeric, *cfg.categorical]
 onnx_inputs = session.get_inputs()
 
 if len(columns) != len(onnx_inputs):
-    raise ValueError(
-        "Le nombre d'entrées ONNX ne correspond pas au contrat."
-    )
+    raise ValueError("Le nombre d'entrées ONNX ne correspond pas au contrat.")
 
 input_names = {
-    column: onnx_input.name
-    for column, onnx_input in zip(columns, onnx_inputs)
+    column: onnx_input.name for column, onnx_input in zip(columns, onnx_inputs, strict=True)
 }
 
 # Schéma construit à partir de dataset.yaml.
@@ -71,14 +62,8 @@ Categorical = Annotated[
 Instance = create_model(
     "Instance",
     __config__=ConfigDict(extra="forbid"),
-    **{
-        column: (Numeric, ...)
-        for column in cfg.numeric
-    },
-    **{
-        column: (Categorical, ...)
-        for column in cfg.categorical
-    },
+    **{column: (Numeric, ...) for column in cfg.numeric},
+    **{column: (Categorical, ...) for column in cfg.categorical},
 )
 
 
@@ -115,22 +100,12 @@ def score(rows: list[dict[str, Any]]) -> np.ndarray:
     inputs = {}
 
     for column in cfg.numeric:
-        values = [
-            np.nan if row[column] is None else row[column]
-            for row in rows
-        ]
-        inputs[input_names[column]] = np.asarray(
-            values, dtype=np.float64
-        ).reshape(-1, 1)
+        values = [np.nan if row[column] is None else row[column] for row in rows]
+        inputs[input_names[column]] = np.asarray(values, dtype=np.float64).reshape(-1, 1)
 
     for column in cfg.categorical:
-        values = [
-            "" if row[column] is None else row[column]
-            for row in rows
-        ]
-        inputs[input_names[column]] = np.asarray(
-            values, dtype=object
-        ).reshape(-1, 1)
+        values = ["" if row[column] is None else row[column] for row in rows]
+        inputs[input_names[column]] = np.asarray(values, dtype=object).reshape(-1, 1)
 
     outputs = session.run(None, inputs)
     return np.asarray(outputs[1])[:, 1]
@@ -165,22 +140,18 @@ def get_metadata():
             "numeric": cfg.numeric,
             "categorical": cfg.categorical,
         },
-        "model": {
-            key: metadata.get(key)
-            for key in model_keys
-        },
+        "model": {key: metadata.get(key) for key in model_keys},
     }
+
 
 @app.get("/version")
 def get_version():
     return {"version": API_VERSION, "model_version": MODEL_VERSION}
 
+
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest):
-    rows = [
-        instance.model_dump()
-        for instance in request.instances
-    ]
+    rows = [instance.model_dump() for instance in request.instances]
     probabilities = score(rows)
 
     return PredictResponse(

@@ -14,9 +14,7 @@ from pipelines.components import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DRIFT = yaml.safe_load(
-    (ROOT / "params.yaml").read_text(encoding="utf-8")
-)["drift"]
+DRIFT = yaml.safe_load((ROOT / "params.yaml").read_text(encoding="utf-8"))["drift"]
 
 
 @dsl.component(base_image=PIPELINE_IMAGE, install_kfp_package=False)
@@ -86,4 +84,3 @@ if __name__ == "__main__":
         package_path="drift_demo.yaml",
     )
     print("Pipeline compilé : drift_demo.yaml")
-

@@ -13,26 +13,17 @@ import mlflow.sklearn
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.dataset_config import load_config
+from src.dataset_config import load_config  # noqa: E402
 
 
 def main():
     cfg = load_config(ROOT / "dataset.yaml")
 
-    metadata = json.loads(
-        (ROOT / "packaging/model/metadata.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    metadata = json.loads((ROOT / "packaging/model/metadata.json").read_text(encoding="utf-8"))
 
-    mlflow.set_tracking_uri(
-        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-    )
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
 
-    model_uri = (
-        f"models:/{metadata['model_name']}/"
-        f"{metadata['model_version']}"
-    )
+    model_uri = f"models:/{metadata['model_name']}/{metadata['model_version']}"
 
     print(f"Chargement : {model_uri}")
     model = mlflow.sklearn.load_model(model_uri)
