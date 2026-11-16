@@ -4,4 +4,4 @@ metadata:
   name: scoring-model
 spec:
   predictor:
-    canaryTrafficPercent: 10
+    canaryTrafficPercent: 100
