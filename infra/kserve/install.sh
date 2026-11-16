@@ -102,13 +102,24 @@ log "Runtimes de modèles (ClusterServingRuntimes : sklearn, triton, ...)"
 # contrôleur llmisvc : il doit tourner pendant l'apply (relance après KSERVE_LIGHT=1).
 k -n kserve scale deploy/llmisvc-controller-manager --replicas=1
 k -n kserve rollout status deploy/llmisvc-controller-manager --timeout=300s
-retry 6 k apply --server-side --force-conflicts -f "${KSERVE_URL}/kserve-cluster-resources.yaml"
 
 if [ "${KSERVE_LIGHT:-1}" = "1" ]; then
-  # Contrôleurs des LLMInferenceService et du cache LocalModel : non utilisés dans
-  # le cours, on rend leur mémoire au poste (KSERVE_LIGHT=0 pour les garder).
-  k -n kserve scale deploy/llmisvc-controller-manager \
-    deploy/kserve-localmodel-controller-manager --replicas=0
+  curl -fsSL "${KSERVE_URL}/kserve-cluster-resources.yaml" |
+    ../../.venv/bin/python -c '
+import sys
+import yaml
+
+documents = [
+    doc for doc in yaml.safe_load_all(sys.stdin)
+    if doc and doc.get("kind") != "LLMInferenceServiceConfig"
+]
+if not documents:
+    sys.exit("Aucune ressource KServe à appliquer")
+yaml.safe_dump_all(documents, sys.stdout)
+' |
+    k apply --server-side --force-conflicts -f -
+else
+  retry 6 k apply --server-side --force-conflicts -f "${KSERVE_URL}/kserve-cluster-resources.yaml"
 fi
 
 # --- 4. metrics-server (kubectl top, HPA sur le CPU) ----------------------------

@@ -1,4 +1,4 @@
-"""API FastAPI de prédiction avec le modèle ONNX."""
+"""API FastAPI de prédiction avec le modèle ONNAPI_VERSION = os.getenv("APP_VERSION", "1.0.0")X."""
 
 import json
 import os
@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.dataset_config import load_config
 
-API_VERSION = "1.0.0"
+API_VERSION = os.getenv("APP_VERSION", "1.0.0")
 MAX_BATCH = int(os.getenv("MAX_BATCH", "1000"))
 
 MODEL_PATH = Path(
@@ -171,6 +171,9 @@ def get_metadata():
         },
     }
 
+@app.get("/version")
+def get_version():
+    return {"version": API_VERSION, "model_version": MODEL_VERSION}
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest):
