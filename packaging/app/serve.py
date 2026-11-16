@@ -1,4 +1,4 @@
-"""API FastAPI de prédiction avec le modèle ONNAPI_VERSION = os.getenv("APP_VERSION", "1.0.0")X."""
+"""API FastAPI de maintenance prédictive avec un modèle ONNX."""
 
 import json
 import os
