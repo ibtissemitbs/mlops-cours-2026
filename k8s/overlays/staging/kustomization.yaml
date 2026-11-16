@@ -6,7 +6,7 @@ resources:
 images:
   - name: scoring-api
     newName: ghcr.io/ibtissemitbs/mlops-cours-2026/scoring-api
-    newTag: "2.1.2"
+    newTag: "2.1.4"
 patches:
   - target:
       kind: InferenceService
